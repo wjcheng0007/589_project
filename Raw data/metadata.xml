@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<eml:eml xmlns:eml="https://eml.ecoinformatics.org/eml-2.2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://eml.ecoinformatics.org/eml-2.2.0 https://rs.gbif.org/schema/eml-gbif-profile/1.3/eml.xsd"
+packageId="97b0caf2-0c97-4b57-bb78-39673c6dee3d"  system="http://gbif.org" scope="system"
+xml:lang="en">
+    <dataset>
+        <title>GBIF Occurrence Download 0014327-250402121839773</title>
+        <creator>
+            <individualName>
+                <surName>GBIF Download Service</surName>
+            </individualName>
+            <electronicMailAddress>support@gbif.org</electronicMailAddress>
+        </creator>
+        <metadataProvider>
+            <individualName>
+                <surName>GBIF Download Service</surName>
+            </individualName>
+            <electronicMailAddress>support@gbif.org</electronicMailAddress>
+        </metadataProvider>
+        <pubDate>
+                2025-04-09
+        </pubDate>
+        <language>ENGLISH</language>
+        <abstract>
+            A dataset containing all occurrences available in GBIF matching the query:
+{
+  "and" : [
+    "GadmGid is CAN.2_1",
+    "TaxonKey is Tamiasciurus hudsonicus (Erxleben, 1777)"
+  ]
+}
+The dataset includes records from the following constituent datasets. The full metadata for each constituent is also included in this archive:
+20 records from UAM Mammal Collection (Arctos)
+6 records from New Brunswick Museum - Mammals
+13 records from NABU|naturgucker
+4 records from RBINS DaRWIN
+4 records from RBINS Mammal collection
+2 records from NMNH Extant Specimen Records (USNM, US)
+4 records from CHAS Mammalogy Collection (Arctos)
+70 records from UWBM Mammalogy Collection (Arctos)
+1 records from International Barcode of Life project (iBOL)
+36 records from Vertebrate Zoology Division - Mammalogy, Yale Peabody Museum
+23 records from Field Museum of Natural History (Zoology) Mammal Collection
+34 records from PSM Vertebrates Collection
+3 records from SDNHM Mammology Collection
+28 records from MSB Mammal Collection (Arctos)
+10 records from Museum of Comparative Zoology, Harvard University
+44 records from HSU Wildlife Mammals
+28 records from KUBI Mammalogy Collection
+27 records from CAS Mammalogy (MAM)
+3 records from UCLA Donald R. Dickey Bird and Mammal Collection
+45 records from INSDC Sequences
+22 records from University of Michigan Museum of Zoology, Division of Mammals
+1 records from Paleobiology Database
+87 records from Observation.org, Nature data from around the World
+280 records from Canadian Museum of Nature Mammal Collection
+7 records from LACM Vertebrate Collection
+129 records from Cowan Tetrapod Collection - Mammals
+1 records from MSU Mammalogy, Ornithology and Vertebrate Paleontology Collections
+2 records from Biodiversity Research and Teaching Collections - TCWC Vertebrates
+1 records from Brigham Young University Life Science Museum (BYU) Mammal Collection (Arctos)
+240 records from MVZ Mammal Collection (Arctos)
+3 records from SBMNH Vertebrate Zoology
+3207 records from iNaturalist Research-grade Observations
+68 records from Mammalogy Collection - Royal Ontario Museum
+6 records from University of Victoria - Zooarchaeology Lab Collection
+
+        </abstract>
+        <contact>
+            <individualName>
+                <surName>GBIF Download Service</surName>
+            </individualName>
+            <electronicMailAddress>support@gbif.org</electronicMailAddress>
+        </contact>
+
+    </dataset>
+
+    <additionalMetadata>
+        <metadata>
+            <gbif>
+                <dateStamp>2025-04-10T00:01:20Z</dateStamp>
+                <citation identifier="0014327-250402121839773">GBIF Occurrence Download 0014327-250402121839773</citation>
+                <physical>
+                    <objectName>Darwin Core Archive</objectName>
+                    <characterEncoding>UTF-8</characterEncoding>
+                    <dataFormat>
+                        <externallyDefinedFormat>
+                            <formatName>Darwin Core Archive</formatName>
+                        </externallyDefinedFormat>
+                    </dataFormat>
+                    <distribution>
+                        <online>
+                            <url function="download">https://api.gbif.org/v1/occurrence/download/request/0014327-250402121839773.zip</url>
+                        </online>
+                    </distribution>
+                </physical>
+            </gbif>
+        </metadata>
+    </additionalMetadata>
+    </eml:eml>
