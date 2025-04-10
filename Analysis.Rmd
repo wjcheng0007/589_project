@@ -211,6 +211,15 @@ plot(en_K, main = "Ripley’s K-function with CSR Envelopes (Animal Observations
 ![](images/clipboard-1227717430.png)
 
 ```{r}
+# Compute intensity surface for animal observations
+lambda <- density(animal_ppp, sigma = bw.ppl(animal_ppp), positive = TRUE)
+
+# Generate simulation envelope for homogeneous pair correlation function
+pcf_hom <- envelope(animal_ppp, pcf, simulate = expression(rpoispp(lambda)),
+                    rank = 1, nsim = 19)
+
+# Plot the homogeneous pair correlation function with envelope
+plot(pcf_hom, main = "Pair Correlation Function (Homogeneous) - Animal Observations")
 pcf_inhom <- envelope(animal_ppp, pcfinhom, nsim = 19,
                       simulate = expression(rpoispp(lambda)), rank = 1)
 
