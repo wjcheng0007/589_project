@@ -24,9 +24,9 @@ str(DATA$Animal)
 ```
 
 ```{r}
-plot(DATA$Window, main = "Spatial Boundaries of BC Parks")
+plot(DATA$Window, main = "Spatial Boundaries of BC")
 suppressPackageStartupMessages(library(spatstat))
-plot(DATA$Elevation,main="Elevation Map of BC Parks")
+plot(DATA$Elevation,main="Elevation Map of BC Animals")
 coords <- DATA$Animal[,c("X","Y")]
 window_sf <- st_as_sf(DATA$Window)
 window <- as.owin(window_sf)
@@ -208,6 +208,12 @@ plot(en_K, main = "Ripley’s K-function with CSR Envelopes (Animal Observations
 
 ```
 
-```{r}
+![](images/clipboard-1227717430.png)
 
+```{r}
+pcf_inhom <- envelope(animal_ppp, pcfinhom, nsim = 19,
+                      simulate = expression(rpoispp(lambda)), rank = 1)
+
+# Plot the inhomogeneous pair correlation function with simulation envelope
+plot(pcf_inhom, main = "Inhomogeneous Pair Correlation Function (Animal Observations)")
 ```
