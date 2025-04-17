@@ -285,19 +285,19 @@ E_hfi <- median(hfi[], na.rm = TRUE)
 E_dis <- median(dis[], na.rm = TRUE)
 elev_effect <- effectfun(model, "elev", 
                          cover = E_cover, hfi = E_hfi, dis = E_dis, 
-                         se.fit = FALSE)
+                         se.fit = TRUE)
 
 cover_effect <- effectfun(model, "cover", 
                           elev = E_elev, hfi = E_hfi, dis = E_dis, 
-                          se.fit = FALSE)
+                          se.fit = TRUE)
 
 hfi_effect <- effectfun(model, "hfi", 
                         elev = E_elev, cover = E_cover, dis = E_dis, 
-                        se.fit = FALSE)
+                        se.fit = TRUE)
 
 dis_effect <- effectfun(model, "dis", 
                         elev = E_elev, cover = E_cover, hfi = E_hfi, 
-                        se.fit = FALSE)
+                        se.fit = TRUE)
 
 # 📉 Elevation effect
 plot(elev_effect, legend = FALSE,
@@ -326,5 +326,5 @@ plot(dis_effect, legend = FALSE,
 
 ```
 
-```{}
+```         
 ```
