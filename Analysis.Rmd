@@ -190,7 +190,7 @@ Zcut <- cut(DATA$Elevation, breaks = quantile(DATA$Elevation, probs = 0:4 / 4, t
 animals <- unmark(animal_ppp)
 quadratcount(animals, tess = tess(image = Zcut))
 rho <- rhohat(animals, DATA$Elevation)
-plot(rho)
+plot(rho,xlim=(c(0,3000)))
 
 ```
 
@@ -225,4 +225,106 @@ pcf_inhom <- envelope(animal_ppp, pcfinhom, nsim = 19,
 
 # Plot the inhomogeneous pair correlation function with simulation envelope
 plot(pcf_inhom, main = "Inhomogeneous Pair Correlation Function (Animal Observations)")
+```
+
+```{r}
+animal <- unmark(animal_ppp)
+
+elev_rho <- rhohat(animal, DATA$Elevation)
+# Plot with proper axis limits (no negative elevation)
+plot(elev_rho,main = "Estimated Intensity vs Elevation", 
+     xlab = "Elevation (m)",xlim=(c(0,3000)))
+
+# Estimate intensity (rho) as a function of forest cover
+forest_rho <- rhohat(animal, DATA$Forest)
+
+# Plot the intensity as a function of forest cover
+plot(forest_rho, xlab = "Forest Cover (%)",
+     ylab = "Estimated Intensity")
+```
+
+```{r}
+hfi_rho <- rhohat(animal, DATA$HFI)
+plot(hfi_rho)
+dis_rho <- rhohat(animal, DATA$Dist_Water)
+plot(dis_rho)
+```
+
+```{r}
+elev <- DATA$Elevation
+cover <- DATA$Forest
+hfi <- DATA$HFI
+dis <- DATA$Dist_Water
+cor.im(elev,cover,hfi,dis,use ="pairwise.complete.obs")
+```
+
+```{r}
+parks_unmarked <- unmark(parks_ppp)
+model <- ppm(parks_unmarked  ~ elev + I(elev^2) + cover + I(cover^2)+hfi+I(hfi^2)+dis+I(dis^2),covariates = list(elev = elev, cover = cover,hfi=hfi,dis=dis))
+model
+plot(model,se=FALSE,superimpose=FALSE)
+plot(parks,pch=16,cex=0.6,color="white",add=TRUE)
+```
+
+```{r}
+null_model <- ppm(parks_unmarked ~ 1)
+null_model
+AIC(model):AIC(null_model)
+AIC(null_model)-AIC(model)
+```
+
+```{r}
+log_intensity <- log(predict(model, type = "trend", n = 500))  
+# Plot the log-intensity surface
+plot(log_intensity, main = "Log Fitted Intensity of Parks")
+plot(parks, pch = 16, cex = 0.6, col = "white", add = TRUE)
+# Median forest cover and elevation
+E_cover <- median(cover[], na.rm = TRUE)
+E_elev <- median(elev[], na.rm = TRUE)
+E_hfi <- median(hfi[], na.rm = TRUE)
+E_dis <- median(dis[], na.rm = TRUE)
+elev_effect <- effectfun(model, "elev", 
+                         cover = E_cover, hfi = E_hfi, dis = E_dis, 
+                         se.fit = FALSE)
+
+cover_effect <- effectfun(model, "cover", 
+                          elev = E_elev, hfi = E_hfi, dis = E_dis, 
+                          se.fit = FALSE)
+
+hfi_effect <- effectfun(model, "hfi", 
+                        elev = E_elev, cover = E_cover, dis = E_dis, 
+                        se.fit = FALSE)
+
+dis_effect <- effectfun(model, "dis", 
+                        elev = E_elev, cover = E_cover, hfi = E_hfi, 
+                        se.fit = FALSE)
+
+# 📉 Elevation effect
+plot(elev_effect, legend = FALSE,
+     main = paste("Effect of Elevation\n(at forest cover =", round(E_cover, 1), "%)"),
+     xlab = "Elevation (m)",
+     ylab = "log(lambda)",
+     xlim = c(-130, 3000))
+
+# 🌲 Forest cover effect
+plot(cover_effect, legend = FALSE,
+     main = paste("Effect of Forest Cover\n(at elevation =", round(E_elev, 1), "m)"),
+     xlab = "Forest Cover (%)",
+     ylab = "log(lambda)")
+
+# 👣 HFI effect
+plot(hfi_effect, legend = FALSE,
+     main = paste("Effect of Human Footprint Index\n(at HFI =", round(E_hfi, 1), ")"),
+     xlab = "Human Footprint Index",
+     ylab = "log(lambda)")
+
+# 📏 Distance effect
+plot(dis_effect, legend = FALSE,
+     main = paste("Effect of Distance to Road\n(at Distance =", round(E_dis, 1), ")"),
+     xlab = "Distance to Road (km)",
+     ylab = "log(lambda)")
+
+```
+
+```{}
 ```
