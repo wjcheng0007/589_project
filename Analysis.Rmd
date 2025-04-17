@@ -229,6 +229,8 @@ plot(pcf_inhom, main = "Inhomogeneous Pair Correlation Function (Animal Observat
 
 ```{r}
 animal <- unmark(animal_ppp)
+<<<<<<< Updated upstream
+=======
 
 elev_rho <- rhohat(animal, DATA$Elevation)
 # Plot with proper axis limits (no negative elevation)
@@ -276,7 +278,7 @@ AIC(null_model)-AIC(model)
 ```{r}
 log_intensity <- log(predict(model, type = "trend", n = 500))  
 # Plot the log-intensity surface
-plot(log_intensity, main = "Log Fitted Intensity of Parks")
+plot(log_intensity, main = "Log Fitted Intensity of Animals")
 plot(parks, pch = 16, cex = 0.6, col = "white", add = TRUE)
 # Median forest cover and elevation
 E_cover <- median(cover[], na.rm = TRUE)
@@ -320,10 +322,202 @@ plot(hfi_effect, legend = FALSE,
 
 # 📏 Distance effect
 plot(dis_effect, legend = FALSE,
+     main = paste("Effect of Distance to Water\n(at Distance =", round(E_dis, 1), ")"),
+     xlab = "Distance to Water (m)",
+     ylab = "log(lambda)")
+
+```
+
+```{r, cache=TRUE, warning=FALSE}
+# Visualize the Dist_Water covariate image
+plot(DATA$Dist_Water, main = "Distance to Water (BC)", col = terrain.colors(100))
+>>>>>>> Stashed changes
+
+elev_rho <- rhohat(animal, DATA$Elevation)
+# Plot with proper axis limits (no negative elevation)
+plot(elev_rho,main = "Estimated Intensity vs Elevation", 
+     xlab = "Elevation (m)",xlim=(c(0,3000)))
+
+<<<<<<< Updated upstream
+# Estimate intensity (rho) as a function of forest cover
+forest_rho <- rhohat(animal, DATA$Forest)
+
+# Plot the intensity as a function of forest cover
+plot(forest_rho, xlab = "Forest Cover (%)",
+     ylab = "Estimated Intensity")
+```
+
+```{r}
+hfi_rho <- rhohat(animal, DATA$HFI)
+plot(hfi_rho)
+dis_rho <- rhohat(animal, DATA$Dist_Water)
+plot(dis_rho)
+```
+
+=======
+```
+
+## Dist_Water plot with overlay animal points
+
+Most animals are observed **closer to water sources**.
+
+**Central & Southern BC have particularly high densities of points**:
+
+This may reflect ecological preference or simply **sampling bias** (e.g., more data collected in accessible regions).
+
+The plot **suggests a negative correlation** between **distance to water** and **animal presence**.
+
+## Animal intensity vs dist
+
+**Squirrel observations are most intense within \~0–2,000 meters** of water sources.
+
+There are **local peaks** around 5,000 m and 10,000 m, suggesting: Either suitable squirrel habitats also exist at moderate distances from water, or the landscape (e.g., elevation, forest patches) in those areas still provides viable conditions. After \~13,000 m, the estimated intensity drops sharply to near zero, indicating that this species is rarely found far from water.
+
+## Log intensity plot
+
+This squirrel species is more likely to occur near water.\
+Observed points cluster well with the yellow/orange regions
+
+## **inhomogeneous K-function** with simulation envelopes
+
+Kinhom(r) estimates the expected number of other points within distance r of a typical point, after adjusting for Dist_Water
+
+Observed line (black) slightly exceeds the simulation envelope at small to medium r:
+
+-   This suggests residual clustering of squirrel observations not fully explained by Dist_Water alone.
+
+-   It means: even after accounting for water proximity, squirrels tend to occur closer together than expected under a Poisson model driven only by Dist_Water.
+
+At large r (beyond \~200,000 m):
+
+-   The observed curve converges with the simulated envelope.
+
+-   This means the model performs reasonably well at capturing large-scale spatial structure.
+
+-   This result could also be ignored because rarely do we see a location that is over 200,000 meters away from water while having squirrels living there.
+
+There may be additional spatial drivers influencing the point pattern.
+
+```{r, warning=FALSE}
+# Generate simulation envelope for homogeneous pair correlation (just for contrast)
+pcf_hom_dist <- envelope(animal_ppp, pcf,
+                         simulate = expression(rpoispp(lambda_dist)),
+                         rank = 1, nsim = 19)
+
+plot(pcf_hom_dist, main = "Pair Correlation Function (Homogeneous) - Dist_Water Model")
+
+# Inhomogeneous pair correlation function under dist_water-fitted model
+pcf_inhom_dist <- envelope(
+  animal_ppp,
+  fun = pcfinhom,
+  lambda = lambda_dist, 
+  simulate = expression(rpoispp(lambda_dist)),
+  nsim = 19,
+  rank = 1
+)
+
+plot(pcf_inhom_dist, main = "Inhomogeneous Pair Correlation (Fitted with Dist_Water)")
+```
+
+## **homogeneous PCF** plot
+
+**Strong clustering at small distances**:
+
+-   The observed PCF rises sharply to values **above 30** at short distances.
+
+-   This indicates **very strong local clustering**, far exceeding what the model based on `Dist_Water` explains.
+
+Suggests that assuming homogeneity (i.e., ignoring spatial covariates like `Dist_Water`) is not realistic for this data.
+
+## **inhomogeneous PCF** plot
+
+Sharp spike at small distances (r \< \~20,000 m), Beyond \~50,000 m, the observed curve aligns with the envelope, at broader scales, the Dist_Water covariate adequately captures spatial variation in intensity.
+
+**`Dist_Water` alone cannot explain fine-scale clustering** of the squirrels.
+
+>>>>>>> Stashed changes
+```{r}
+elev <- DATA$Elevation
+cover <- DATA$Forest
+hfi <- DATA$HFI
+dis <- DATA$Dist_Water
+cor.im(elev,cover,hfi,dis,use ="pairwise.complete.obs")
+```
+
+```{r}
+parks_unmarked <- unmark(parks_ppp)
+model <- ppm(parks_unmarked  ~ elev + I(elev^2) + cover + I(cover^2)+hfi+I(hfi^2)+dis+I(dis^2),covariates = list(elev = elev, cover = cover,hfi=hfi,dis=dis))
+model
+plot(model,se=FALSE,superimpose=FALSE)
+plot(parks,pch=16,cex=0.6,color="white",add=TRUE)
+```
+
+```{r}
+null_model <- ppm(parks_unmarked ~ 1)
+null_model
+AIC(model):AIC(null_model)
+AIC(null_model)-AIC(model)
+```
+
+```{r}
+log_intensity <- log(predict(model, type = "trend", n = 500))  
+# Plot the log-intensity surface
+plot(log_intensity, main = "Log Fitted Intensity of Parks")
+plot(parks, pch = 16, cex = 0.6, col = "white", add = TRUE)
+# Median forest cover and elevation
+E_cover <- median(cover[], na.rm = TRUE)
+E_elev <- median(elev[], na.rm = TRUE)
+E_hfi <- median(hfi[], na.rm = TRUE)
+E_dis <- median(dis[], na.rm = TRUE)
+elev_effect <- effectfun(model, "elev", 
+                         cover = E_cover, hfi = E_hfi, dis = E_dis, 
+                         se.fit = FALSE)
+
+cover_effect <- effectfun(model, "cover", 
+                          elev = E_elev, hfi = E_hfi, dis = E_dis, 
+                          se.fit = FALSE)
+
+<<<<<<< Updated upstream
+hfi_effect <- effectfun(model, "hfi", 
+                        elev = E_elev, cover = E_cover, dis = E_dis, 
+                        se.fit = FALSE)
+
+dis_effect <- effectfun(model, "dis", 
+                        elev = E_elev, cover = E_cover, hfi = E_hfi, 
+                        se.fit = FALSE)
+
+# 📉 Elevation effect
+plot(elev_effect, legend = FALSE,
+     main = paste("Effect of Elevation\n(at forest cover =", round(E_cover, 1), "%)"),
+     xlab = "Elevation (m)",
+     ylab = "log(lambda)",
+     xlim = c(-130, 3000))
+
+# 🌲 Forest cover effect
+plot(cover_effect, legend = FALSE,
+     main = paste("Effect of Forest Cover\n(at elevation =", round(E_elev, 1), "m)"),
+     xlab = "Forest Cover (%)",
+     ylab = "log(lambda)")
+
+# 👣 HFI effect
+plot(hfi_effect, legend = FALSE,
+     main = paste("Effect of Human Footprint Index\n(at HFI =", round(E_hfi, 1), ")"),
+     xlab = "Human Footprint Index",
+     ylab = "log(lambda)")
+
+# 📏 Distance effect
+plot(dis_effect, legend = FALSE,
      main = paste("Effect of Distance to Road\n(at Distance =", round(E_dis, 1), ")"),
      xlab = "Distance to Road (km)",
      ylab = "log(lambda)")
 
+=======
+# Add legend
+legend("topright",
+       legend = c("BC (All Pixels)", "Animal Observations"),
+       col = c("gray40", "blue"),
+       lwd = 2)
+>>>>>>> Stashed changes
 ```
 
 ```{}
