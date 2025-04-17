@@ -55,7 +55,7 @@ fig <- persp(DATA$Elevation,
 )
 x <- DATA$Animal$X
 y <- DATA$Animal$Y
-# Overlay the park locations.
+# Overlay the animal locations.
 perspPoints(x = x, y = y,
             Z = DATA$Elevation, M = fig,
             pch = 16, col = "blue", cex = 0.6)
@@ -226,3 +226,166 @@ pcf_inhom <- envelope(animal_ppp, pcfinhom, nsim = 19,
 # Plot the inhomogeneous pair correlation function with simulation envelope
 plot(pcf_inhom, main = "Inhomogeneous Pair Correlation Function (Animal Observations)")
 ```
+
+```{r, cache=TRUE, warning=FALSE}
+# Visualize the Dist_Water covariate image
+plot(DATA$Dist_Water, main = "Distance to Water (BC)", col = terrain.colors(100))
+
+# Overlay animal observation locations
+points(DATA$Animal$X, DATA$Animal$Y, pch = 16, col = "blue", cex = 0.5)
+
+# Estimate the relationship between animal intensity and distance to water
+# Use rhohat to visualize conditional intensity of points vs. Dist_Water
+rho_dist <- rhohat(animal_ppp, covariate = DATA$Dist_Water)
+
+# Plot the result
+plot(rho_dist, main = "Animal Intensity vs. Distance to Water",
+     xlab = "Distance to Water", ylab = "Estimated Intensity")
+
+# Fit an inhomogeneous Poisson model using distance to water as a covariate
+ppm_dist <- ppm(animal_ppp ~ dist, covariates = list(dist = DATA$Dist_Water))
+
+# Predict the fitted intensity surface based on the model
+lambda_dist <- predict(ppm_dist)
+
+plot(log(lambda_dist),
+     main = "Log-Intensity of Animal Occurrences (Distance to Water)")
+
+# Overlay the observed animal locations
+plot(animal_ppp, pch = 16, cex = 0.3, col = "black", add = TRUE)
+# Generate simulation envelope for inhomogeneous K-function under fitted model
+en_K_dist <- envelope(animal_ppp, Kinhom,
+                      simulate = expression(rpoispp(lambda_dist)),
+                      correction = "border",
+                      rank = 1, nsim = 19, fix.n = TRUE)
+
+# Plot the inhomogeneous K-function with envelope
+plot(en_K_dist, main = "Inhomogeneous K-function (Fitted with Dist_Water)")
+
+
+```
+
+## Dist_Water plot with overlay animal points
+
+Most animals are observed **closer to water sources**.
+
+**Central & Southern BC have particularly high densities of points**:
+
+This may reflect ecological preference or simply **sampling bias** (e.g., more data collected in accessible regions).
+
+The plot **suggests a negative correlation** between **distance to water** and **animal presence**.
+
+## Animal intensity vs dist
+
+**Squirrel observations are most intense within \~0–2,000 meters** of water sources.
+
+There are **local peaks** around 5,000 m and 10,000 m, suggesting: Either suitable squirrel habitats also exist at moderate distances from water, or the landscape (e.g., elevation, forest patches) in those areas still provides viable conditions. After \~13,000 m, the estimated intensity drops sharply to near zero, indicating that this species is rarely found far from water.\
+
+## Log intensity plot
+
+This squirrel species is more likely to occur near water.\
+Observed points cluster well with the yellow/orange regions
+
+## **inhomogeneous K-function** with simulation envelopes
+
+Kinhom(r) estimates the expected number of other points within distance r of a typical point, after adjusting for Dist_Water
+
+Observed line (black) slightly exceeds the simulation envelope at small to medium r:
+
+-   This suggests residual clustering of squirrel observations not fully explained by Dist_Water alone.
+
+-   It means: even after accounting for water proximity, squirrels tend to occur closer together than expected under a Poisson model driven only by Dist_Water.
+
+At large r (beyond \~200,000 m):
+
+-   The observed curve converges with the simulated envelope.
+
+-   This means the model performs reasonably well at capturing large-scale spatial structure.
+
+-   This result could also be ignored because rarely do we see a location that is over 200,000 meters away from water while having squirrels living there.
+
+There may be additional spatial drivers influencing the point pattern.
+
+```{r}
+en_K_dist_cut <- envelope(animal_ppp, Kinhom,
+                          r = seq(0, 15000, length.out = 100),
+                          simulate = expression(rpoispp(lambda_dist)),
+                          correction = "border",
+                          rank = 1, nsim = 19, fix.n = TRUE)
+
+plot(en_K_dist_cut, main = "Inhomogeneous K-function (r ≤ 15,000)")
+```
+
+```{r, warning=FALSE}
+# Generate simulation envelope for homogeneous pair correlation (just for contrast)
+pcf_hom_dist <- envelope(animal_ppp, pcf,
+                         simulate = expression(rpoispp(lambda_dist)),
+                         rank = 1, nsim = 19)
+
+plot(pcf_hom_dist, main = "Pair Correlation Function (Homogeneous) - Dist_Water Model")
+
+# Inhomogeneous pair correlation function under dist_water-fitted model
+pcf_inhom_dist <- envelope(
+  animal_ppp,
+  fun = pcfinhom,
+  lambda = lambda_dist, 
+  simulate = expression(rpoispp(lambda_dist)),
+  nsim = 19,
+  rank = 1
+)
+
+plot(pcf_inhom_dist, main = "Inhomogeneous Pair Correlation (Fitted with Dist_Water)")
+```
+
+## **homogeneous PCF** plot
+
+**Strong clustering at small distances**:
+
+-   The observed PCF rises sharply to values **above 30** at short distances.
+
+-   This indicates **very strong local clustering**, far exceeding what the model based on `Dist_Water` explains.
+
+Suggests that assuming homogeneity (i.e., ignoring spatial covariates like `Dist_Water`) is not realistic for this data.
+
+## **inhomogeneous PCF** plot
+
+Sharp spike at small distances (r \< \~20,000 m), Beyond \~50,000 m, the observed curve aligns with the envelope, at broader scales, the Dist_Water covariate adequately captures spatial variation in intensity.
+
+**`Dist_Water` alone cannot explain fine-scale clustering** of the squirrels.
+
+```{r}
+# Extract all pixel values of Dist_Water across BC
+dist_all <- DATA$Dist_Water$v
+dist_all <- dist_all[!is.na(dist_all)]
+
+# Extract Dist_Water values at animal observation locations
+dist_at_animals <- interp.im(DATA$Dist_Water, DATA$Animal$X, DATA$Animal$Y)
+dist_at_animals <- dist_at_animals[!is.na(dist_at_animals)]
+
+# Compute KDEs
+kde_dist_all <- density(dist_all)
+kde_dist_animals <- density(dist_at_animals)
+
+# Plot both KDEs
+plot(kde_dist_all,
+     main = "Distance to Water: BC vs. Animal Observations",
+     xlab = "Distance to Water",
+     ylab = "Density",
+     col = "gray40", lwd = 2,
+     xlim = range(c(kde_dist_all$x, kde_dist_animals$x)))
+lines(kde_dist_animals, col = "blue", lwd = 2)
+
+
+# Add legend
+legend("topright",
+       legend = c("BC (All Pixels)", "Animal Observations"),
+       col = c("gray40", "blue"),
+       lwd = 2)
+
+```
+
+## KDE plot
+
+The squirrels appears to **prefer habitats within a few kilometers of water**, far more than would occur by chance.
+
+This supports our earlier finding from `rhohat()`, the inhomogeneous K-function, and our intensity map.
