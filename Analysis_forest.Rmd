@@ -243,7 +243,7 @@ plot(rho_forest, main = "Animal Intensity vs. Forest Cover",
 
 ```{r}
 # Fit an inhomogeneous Poisson model using forest cover as a covariate
-ppm_forest <- ppm(animal_ppp ~ dist, covariates = list(dist = DATA$Forest))
+ppm_forest <- ppm(animal_ppp ~ forest, covariates = list(forest = DATA$Forest))
 
 # Predict the fitted intensity surface based on the model
 lambda_forest <- predict(ppm_forest)
@@ -258,15 +258,9 @@ plot(en_K_forest, main = "Inhomogeneous K-function (Fitted with Forest Cover)")
 
 ```
 
-**The inhomogeneous K-function suggests that forest cover explains most of the large-scale spatial structure.**
+**After accounting for forest cover, there’s still extra clustering among animal observations, animals tend to be closer together than expected under a Poisson model fitted with forest cover.**
 
-**This tells us:**
-
-**Forest cover is a major driver of where animals are located across the region.**
-
-**It captures broad habitat preferences—such as animals being more common in large forested areas.**
-
-**Ecological meaning: Animals are selecting areas based on habitat quality, and forest density is a good proxy for that.**
+**Clustering happens at short to medium distances(0-200000), not over long distances**
 
 ```{r}
 # Generate simulation envelope for homogeneous pair correlation (just for contrast)
@@ -338,4 +332,12 @@ legend("topright",
 
 ```
 
-**This graph suggests that animal observations in BC are non-randomly distributed relative to forest cover, indicating habitat selection.**
+**This is a nonparametric exploration of spatial covariate effects:**
+
+**Animals are less likely to be observed in areas of:**
+
+**Very low forest cover (urban, farmland, etc.)**
+
+**Very high forest cover (possibly dense forest with poor visibility or accessibility)**
+
+**Instead, observations are more common in moderate to moderately high forest cover, possibly representing edge habitats or accessible areas.**
