@@ -259,15 +259,15 @@ cor.im(elev,cover,hfi,dis,use ="pairwise.complete.obs")
 ```
 
 ```{r}
-parks_unmarked <- unmark(parks_ppp)
-model <- ppm(parks_unmarked  ~ elev + I(elev^2) + cover + I(cover^2)+hfi+I(hfi^2)+dis+I(dis^2),covariates = list(elev = elev, cover = cover,hfi=hfi,dis=dis))
+animal_unmarked <- unmark(animal_ppp)
+model <- ppm(animal_unmarked  ~ elev + I(elev^2) + cover + I(cover^2)+hfi+I(hfi^2)+dis+I(dis^2),covariates = list(elev = elev, cover = cover,hfi=hfi,dis=dis))
 model
 plot(model,se=FALSE,superimpose=FALSE)
 plot(parks,pch=16,cex=0.6,color="white",add=TRUE)
 ```
 
 ```{r}
-null_model <- ppm(parks_unmarked ~ 1)
+null_model <- ppm(animal_unmarked ~ 1)
 null_model
 AIC(model):AIC(null_model)
 AIC(null_model)-AIC(model)
@@ -285,19 +285,19 @@ E_hfi <- median(hfi[], na.rm = TRUE)
 E_dis <- median(dis[], na.rm = TRUE)
 elev_effect <- effectfun(model, "elev", 
                          cover = E_cover, hfi = E_hfi, dis = E_dis, 
-                         se.fit = TRUE)
+                         se.fit = FALSE)
 
 cover_effect <- effectfun(model, "cover", 
                           elev = E_elev, hfi = E_hfi, dis = E_dis, 
-                          se.fit = TRUE)
+                          se.fit = FALSE)
 
 hfi_effect <- effectfun(model, "hfi", 
                         elev = E_elev, cover = E_cover, dis = E_dis, 
-                        se.fit = TRUE)
+                        se.fit = FALSE)
 
 dis_effect <- effectfun(model, "dis", 
                         elev = E_elev, cover = E_cover, hfi = E_hfi, 
-                        se.fit = TRUE)
+                        se.fit = FALSE)
 
 # 📉 Elevation effect
 plot(elev_effect, legend = FALSE,
@@ -324,7 +324,4 @@ plot(dis_effect, legend = FALSE,
      xlab = "Distance to Road (km)",
      ylab = "log(lambda)")
 
-```
-
-```         
 ```
