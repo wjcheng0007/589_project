@@ -1,0 +1,431 @@
+---
+title: "589 project"
+author: "all"
+date: "`r format(Sys.time(), '%d %B, %Y %H:%M:%OS')`"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+# DO NOT ALTER CODE IN THIS CHUNK
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+------------------------------------------------------------------------
+
+```{r}
+library(sf)
+library(spatstat.geom)
+library(sp)
+load("BC_Animal.Rda")
+sapply(DATA, class)
+str(DATA$Animal)
+
+```
+
+```{r}
+plot(DATA$Window, main = "Spatial Boundaries of BC")
+suppressPackageStartupMessages(library(spatstat))
+plot(DATA$Elevation,main="Elevation Map of BC Animals")
+coords <- DATA$Animal[,c("X","Y")]
+window_sf <- st_as_sf(DATA$Window)
+window <- as.owin(window_sf)
+animal_ppp <- ppp(x = coords$X,
+                y = coords$Y,
+                window = window,
+                )
+# Run plot() on the resulting ppp object.
+plot(animal_ppp)
+```
+
+```{r}
+fig <- persp(DATA$Elevation,
+      theta = 10,
+      phi = 30,
+      expand = 20,
+      border = NA,
+      shade = 0.7,
+      lphi = 10,
+      r = 10,
+      box = FALSE,
+      apron = TRUE,
+      colmap  =terrain.colors(100),
+      visible = TRUE,
+      main = ""
+)
+x <- DATA$Animal$X
+y <- DATA$Animal$Y
+# Overlay the park locations.
+perspPoints(x = x, y = y,
+            Z = DATA$Elevation, M = fig,
+            pch = 16, col = "blue", cex = 0.6)
+plot(cut(DATA$Elevation,
+         5),col = terrain.colors(5),
+     main = "Elevation classes")
+
+points(DATA$Animal$X, DATA$Animal$Y, pch = 16, col = "blue", cex = 0.6)
+
+b <- quantile(DATA$Elevation, probs = (0:5)/5, type = 2, na.rm = TRUE)
+Zcut <- cut(DATA$Elevation, breaks = b)
+
+
+V <- tess(image = Zcut)
+
+
+xrange <- range(c(DATA$Animal$X, DATA$Elevation$xrange))
+yrange <- range(c(DATA$Animal$Y, DATA$Elevation$yrange))
+custom_win <- owin(xrange = xrange, yrange = yrange)
+
+animal_ppp_full <- ppp(x = DATA$Animal$X,
+                       y = DATA$Animal$Y,
+                       window = custom_win)
+
+counts <- quadratcount(animal_ppp_full, tess = V)
+
+table_counts <- as.table(counts)
+table_counts
+
+```
+
+```{r}
+
+# Calculate the median elevation within British Columbia and at animal locations
+median_bc <- median(DATA$Elevation$v, na.rm = TRUE)
+elev_at_animals <- interp.im(DATA$Elevation, DATA$Animal$X, DATA$Animal$Y)
+median_animals <- median(elev_at_animals, na.rm = TRUE)
+
+cat("Median elevation in BC:", median_bc, "\n")
+cat("Median elevation at animal locations:", median_animals, "\n")
+
+# Generate KDE of elevation across BC
+elev_all <- DATA$Elevation$v
+elev_all <- elev_all[!is.na(elev_all)]
+
+# Generate KDE of elevation at animal observation locations
+elev_at_animals <- elev_at_animals[!is.na(elev_at_animals)]
+kde_all <- density(elev_all)
+kde_animals <- density(elev_at_animals)
+
+# Plot both KDE distributions
+plot(kde_all,
+     main = "Elevation Distributions: BC vs. Animal Observations",
+     xlab = "Elevation (meters)",
+     ylab = "Density",
+     col = "gray40", lwd = 2,
+     xlim = range(c(kde_all$x, kde_animals$x)))
+lines(kde_animals, col = "blue", lwd = 2)
+
+# Add legend
+legend("topright",
+       legend = c("BC (All Pixels)", "Animal Observations"),
+       col = c("gray40", "blue"),
+       lwd = 2)
+
+# Identify both the highest and lowest elevation animal observations
+elev_at_animals_full <- interp.im(DATA$Elevation, DATA$Animal$X, DATA$Animal$Y)
+max_index <- which.max(elev_at_animals_full)
+min_index <- which.min(elev_at_animals_full)
+
+highest_animal <- DATA$Animal[max_index, ]
+lowest_animal  <- DATA$Animal[min_index, ]
+
+cat("Highest elevation animal observation:\n")
+print(highest_animal)
+
+cat("Lowest elevation animal observation:\n")
+print(lowest_animal)
+
+
+```
+
+```{r}
+# Compute the spatial intensity (points per km²) for animal observations
+library(spatstat.explore)
+# For example, a 10x10 grid
+nx <- 10
+ny <- 10
+# Count points in each quadrat
+Q <- quadratcount(animal_ppp, nx=nx, ny=ny)
+intensity(Q)
+quadrat.test(Q)
+pp.animal.km <- rescale(animal_ppp, s = 1000, unitname = "km")
+area_km <- area.owin(Window(pp.animal.km))
+n_animals <- npoints(animal_ppp)
+intensity <- n_animals / area_km
+intensity
+plot(animal_ppp , pch = 16, cols = "black", cex = 0.6)
+# Overlay the quadrat grid
+plot(Q, add = TRUE, col = "red")
+```
+
+```{r}
+# Plot quadrat-based intensity and overlay animal locations
+plot(intensity(Q, image = TRUE))
+plot(animal_ppp, pch = 16, cex = 0.3, col = "black", add = TRUE)
+
+# Kernel density estimation using Diggle’s rule
+kde <- density(animal_ppp, sigma = bw.ppl)
+
+# Plot kernel density map with animal points
+plot(kde, main = "Kernel Density of Animal Observation Intensity")
+plot(animal_ppp, pch = 16, cex = 0.3, col = "black", add = TRUE)
+
+```
+
+```{r}
+# Perform kernel intensity estimation with cross-validated bandwidth and identify hotspots for animal observations
+bw_cv <- bw.ppl(animal_ppp)
+kde_cv <- scanLRTS(animal_ppp, r = bw_cv)
+plot(kde_cv, main = "Intensity Estimate (bw.ppl cross-validation)")
+hotspot_mask <- eval.im(pchisq(kde_cv, df = 1, lower.tail = FALSE))
+plot(Window(animal_ppp), add = TRUE, border = "darkgreen", lwd = 1)
+plot(hotspot_mask)
+plot(Window(animal_ppp), add = TRUE, border = "darkgreen", lwd = 1)
+
+```
+
+```{r}
+# Estimate the relationship between animal intensity and elevation using rhohat
+Zcut <- cut(DATA$Elevation, breaks = quantile(DATA$Elevation, probs = 0:4 / 4, type = 2))
+animals <- unmark(animal_ppp)
+quadratcount(animals, tess = tess(image = Zcut))
+rho <- rhohat(animals, DATA$Elevation)
+plot(rho)
+
+```
+
+```{r}
+# Compute the inhomogeneous intensity surface for animal observations
+lambda <- density(animal_ppp, sigma = bw.ppl, positive = TRUE)
+
+# Generate Monte Carlo simulations for inhomogeneous K-function
+en_K <- envelope(animal_ppp, Kinhom, simulate = expression(rpoispp(lambda)),
+                 correction = "border", rank = 1, nsim = 19, fix.n = TRUE)
+
+# Plot the K-function with simulation envelope
+plot(en_K, main = "Ripley’s K-function with CSR Envelopes (Animal Observations)")
+
+
+```
+
+![](images/clipboard-1227717430.png)
+
+```{r}
+pcf_inhom <- envelope(animal_ppp, pcfinhom, nsim = 19,
+                      simulate = expression(rpoispp(lambda)), rank = 1)
+
+# Plot the inhomogeneous pair correlation function with simulation envelope
+plot(pcf_inhom, main = "Inhomogeneous Pair Correlation Function (Animal Observations)")
+```
+
+### analysis with HFI
+
+```{r}
+plot(DATA$HFI, main = "HFI and Squirrel Locations",
+#     log=TRUE,
+     se = FALSE,
+     superimpose = FALSE)
+plot(animal_ppp,
+     pch = 16,
+     cex = 0.6,
+     cols = "white",
+     add = TRUE)
+plot(animal_ppp,
+     pch = 16,
+     cex = 0.5,
+     cols = "red",
+     add = TRUE)
+```
+
+```{r}
+hfi_vals <- as.vector(DATA$HFI)
+
+hfi_vals <- hfi_vals[!is.na(hfi_vals)]
+hist(hfi_vals, 
+     breaks = 50, 
+     col = "lightblue", 
+     main = "Distribution of HFI Values",
+     xlab = "HFI (Human Footprint Index)")
+```
+```{r}
+library(dplyr)
+library(ggplot2)
+
+squirrel_hfi <- DATA$HFI[animal_ppp_full]
+
+bins <- cut(squirrel_hfi, breaks = c(0, 0.1, 0.2, 0.4, 0.6,0.8, 1))
+df <- data.frame(HFI = bins)
+ggplot(df, aes(HFI)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Squirrel Counts by HFI Interval", x = "HFI", y = "Count")
+```
+
+
+
+```{r}
+rho_hfi <- rhohat(unmark(animal_ppp_full), covariate = DATA$HFI)
+plot(rho_hfi, 
+     main = "Effect of Human Footprint Index (HFI) on Animal Intensity",
+     xlab = "HFI")
+```
+
+```{r}
+# All pixel values of HFI across BC
+hfi_all <- DATA$HFI$v
+hfi_all <- hfi_all[!is.na(hfi_all)]
+
+# HFI values at animal locations
+hfi_at_animals <- interp.im(DATA$HFI, DATA$Animal$X, DATA$Animal$Y)
+hfi_at_animals <- hfi_at_animals[!is.na(hfi_at_animals)]
+
+# Kernel density estimation
+kde_hfi_all <- density(hfi_all)
+kde_hfi_animals <- density(hfi_at_animals)
+
+# Plot the KDEs
+plot(kde_hfi_all,
+     main = "HFI: BC vs. Animal Observations",
+     xlab = "HFI",
+     ylab = "Density",
+     col = "gray40", lwd = 2,
+     xlim = range(c(kde_hfi_all$x, kde_hfi_animals$x)))
+lines(kde_hfi_animals, col = "blue", lwd = 2)
+
+legend("topright",
+       legend = c("All Pixels in BC", "Animal Observations"),
+       col = c("gray40", "blue"),
+       lwd = 2)
+```
+
+
+
+
+
+```{r}
+ppm_hfi <- ppm(animal_ppp ~ HFI, covariates = DATA)
+lambda_hfi <- predict(ppm_hfi)
+summary(ppm_hfi)
+```
+
+```{r}
+library(here)
+setwd(here::here())
+# Homogeneous PCF - assumes spatial homogeneity
+pcf_hom_hfi <- envelope(animal_ppp,
+                        fun = pcf,
+                        simulate = expression(rpoispp(lambda_hfi)),
+                        nsim = 19,
+                        global = TRUE)
+
+plot(pcf_hom_hfi,
+     main = "Homogeneous Pair Correlation Function (HFI Model)",
+     xlab = "Distance (r)",
+     ylab = "g(r)")
+
+# Inhomogeneous PCF - based on fitted model
+pcf_inhom_hfi <- envelope(animal_ppp,
+                          fun = pcfinhom,
+                          lambda = lambda_hfi,
+                          simulate = expression(rpoispp(lambda_hfi)),
+                          nsim = 19,
+                          global = TRUE)
+
+plot(pcf_inhom_hfi,
+     main = "Inhomogeneous PCF (Fitted with HFI)",
+     xlab = "Distance (r)",
+     ylab = "g(r)")
+```
+
+```{r}
+ppm_null <- ppm(unmark(animal_ppp) ~ 1)
+AIC(ppm_null)
+AIC(ppm_hfi)
+```
+
+```{r}
+par(mfrow = c(1,2))
+plot(predict(ppm_hfi), main = "Predicted Intensity (With HFI)",
+     log=TRUE,
+     se = FALSE,
+     superimpose = FALSE)
+
+plot(predict(ppm_hfi), main = "Predicted Intensity (With HFI)",
+     log=TRUE,
+     se = FALSE,
+     superimpose = FALSE)
+plot(animal_ppp,
+     pch = 16,
+     cex = 0.4,
+     cols = "white",
+     add = TRUE)
+plot(animal_ppp,
+     pch = 16,
+     cex = 0.3,
+     cols = "black",
+     add = TRUE)
+```
+```{r}
+model1 <- ppm(animal_ppp_full ~ HFI, covariates = DATA)
+model2 <- ppm(animal_ppp_full ~ HFI + Elevation, covariates = DATA)
+model3 <- ppm(animal_ppp_full ~ HFI + Elevation + Forest, covariates = DATA)
+model4 <- ppm(animal_ppp_full ~ HFI + Elevation + Forest + Dist_Water, covariates = DATA)
+model5 <- ppm(animal_ppp_full ~ HFI + I(HFI^2)+ Elevation+ I(Elevation^2)+ Dist_Water+ I(Dist_Water^2)+Forest+ I(Forest^2), covariates = DATA)
+AIC(model1)
+AIC(model2)
+AIC(model3)
+AIC(model4)
+AIC(model5)
+```
+
+```{r}
+ppm_multi <- ppm(animal_ppp_full ~ HFI + I(HFI^2)+ Elevation+ I(Elevation^2)+ Dist_Water+ I(Dist_Water^2)+Forest+ I(Forest^2), covariates = DATA)
+
+plot(predict(ppm_multi), main = "Predicted Intensity (HFI + Elevation + Forest+Dist_Water)",log=TRUE)
+plot(animal_ppp,
+     pch = 16,
+     cex = 0.4,
+     cols = "white",
+     add = TRUE)
+plot(animal_ppp,
+     pch = 16,
+     cex = 0.3,
+     cols = "black",
+     add = TRUE)
+```
+
+
+
+```{r}
+#Calculate the partial residuals as a function of elevation
+par_res_elev <- parres(ppm_multi, "Elevation")
+
+#Calculate the relative intensity as function of gradient
+par_res_fore <- parres(ppm_multi, "Forest")
+par_res_hfi <- parres(ppm_multi, "HFI")
+par_res_water <- parres(ppm_multi, "Dist_Water")
+#Side by side plotting
+par(mfrow = c(2,2))
+plot(par_res_elev,
+     legend = FALSE,
+     lwd = 2,
+     main = "",
+     xlab = "Elevation (m)")
+plot(par_res_fore,
+     legend = FALSE,
+     lwd = 2,
+     main = "",
+     xlab = "Froest (%)")
+plot(par_res_hfi,
+     legend = FALSE,
+     lwd = 2,
+     main = "",
+     xlab = "HIF")
+plot(par_res_water,
+     legend = FALSE,
+     lwd = 2,
+     main = "",
+     xlab = "Water")
+```
+
+
+
