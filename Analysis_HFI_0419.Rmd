@@ -248,6 +248,7 @@ hist(hfi_vals,
      main = "Distribution of HFI Values",
      xlab = "HFI (Human Footprint Index)")
 ```
+
 ```{r}
 library(dplyr)
 library(ggplot2)
@@ -260,8 +261,6 @@ ggplot(df, aes(HFI)) +
   geom_bar(fill = "steelblue") +
   labs(title = "Squirrel Counts by HFI Interval", x = "HFI", y = "Count")
 ```
-
-
 
 ```{r}
 rho_hfi <- rhohat(unmark(animal_ppp_full), covariate = DATA$HFI)
@@ -297,10 +296,6 @@ legend("topright",
        col = c("gray40", "blue"),
        lwd = 2)
 ```
-
-
-
-
 
 ```{r}
 ppm_hfi <- ppm(animal_ppp ~ HFI, covariates = DATA)
@@ -365,6 +360,94 @@ plot(animal_ppp,
      cols = "black",
      add = TRUE)
 ```
+
+```{r}
+plot(DATA$Dist_Water, main = "Distance to Water (BC)", col = terrain.colors(100))
+
+# Overlay animal observation locations
+points(DATA$Animal$X, DATA$Animal$Y, pch = 16, col = "blue", cex = 0.5)
+
+# Estimate the relationship between animal intensity and distance to water
+# Use rhohat to visualize conditional intensity of points vs. Dist_Water
+rho_dist <- rhohat(animal_ppp, covariate = DATA$Dist_Water)
+
+# Plot the result
+plot(rho_dist, main = "Animal Intensity vs. Distance to Water",
+     xlab = "Distance to Water", ylab = "Estimated Intensity")
+
+# Fit an inhomogeneous Poisson model using distance to water as a covariate
+ppm_dist <- ppm(animal_ppp ~ dist, covariates = list(dist = DATA$Dist_Water))
+
+# Predict the fitted intensity surface based on the model
+lambda_dist <- predict(ppm_dist)
+
+plot(log(lambda_dist),
+     main = "Log-Intensity of Animal Occurrences (Distance to Water)")
+
+# Overlay the observed animal locations
+plot(animal_ppp, pch = 16, cex = 0.3, col = "black", add = TRUE)
+# Generate simulation envelope for inhomogeneous K-function under fitted model
+en_K_dist <- envelope(animal_ppp, Kinhom,
+                      simulate = expression(rpoispp(lambda_dist)),
+                      correction = "border",
+                      rank = 1, nsim = 19, fix.n = TRUE)
+
+# Plot the inhomogeneous K-function with envelope
+plot(en_K_dist, main = "Inhomogeneous K-function (Fitted with Dist_Water)")
+```
+
+```{r, warning=FALSE}
+# Generate simulation envelope for homogeneous pair correlation (just for contrast)
+pcf_hom_dist <- envelope(animal_ppp, pcf,
+                         simulate = expression(rpoispp(lambda_dist)),
+                         rank = 1, nsim = 19)
+
+plot(pcf_hom_dist, main = "Pair Correlation Function (Homogeneous) - Dist_Water Model")
+
+# Inhomogeneous pair correlation function under dist_water-fitted model
+pcf_inhom_dist <- envelope(
+  animal_ppp,
+  fun = pcfinhom,
+  lambda = lambda_dist, 
+  simulate = expression(rpoispp(lambda_dist)),
+  nsim = 19,
+  rank = 1
+)
+
+plot(pcf_inhom_dist, main = "Inhomogeneous Pair Correlation (Fitted with Dist_Water)")
+```
+
+```{r}
+# Extract all pixel values of Dist_Water across BC
+dist_all <- DATA$Dist_Water$v
+dist_all <- dist_all[!is.na(dist_all)]
+
+# Extract Dist_Water values at animal observation locations
+dist_at_animals <- interp.im(DATA$Dist_Water, DATA$Animal$X, DATA$Animal$Y)
+dist_at_animals <- dist_at_animals[!is.na(dist_at_animals)]
+
+# Compute KDEs
+kde_dist_all <- density(dist_all)
+kde_dist_animals <- density(dist_at_animals)
+
+# Plot both KDEs
+plot(kde_dist_all,
+     main = "Distance to Water: BC vs. Animal Observations",
+     xlab = "Distance to Water",
+     ylab = "Density",
+     col = "gray40", lwd = 2,
+     xlim = range(c(kde_dist_all$x, kde_dist_animals$x)))
+lines(kde_dist_animals, col = "blue", lwd = 2)
+
+
+# Add legend
+legend("topright",
+       legend = c("BC (All Pixels)", "Animal Observations"),
+       col = c("gray40", "blue"),
+       lwd = 2)
+
+```
+
 ```{r}
 model1 <- ppm(animal_ppp ~ HFI, covariates = DATA)
 model2 <- ppm(animal_ppp ~ HFI + Elevation, covariates = DATA)
@@ -379,8 +462,6 @@ AIC(model4)
 AIC(model5)
 
 ```
-
-
 
 ```{r}
 ppm_multi <- ppm(animal_ppp ~ HFI + I(HFI^2)+ Elevation+ I(Elevation^2)+ Dist_Water+ I(Dist_Water^2)+Forest+ I(Forest^2), covariates = DATA)
@@ -398,25 +479,20 @@ plot(animal_ppp,
      add = TRUE)
 ```
 
-
-
 ```{r}
 quadrat.test(ppm_multi, nx = 5, ny = 4)
 ```
 
-
-```{r}
+```{r, cache=TRUE}
 pcf_res <- pcfinhom(animal_ppp, lambda = predict(ppm_multi))
 plot(pcf_res, main = "Residual pair correlation function")
 abline(h = 1, col = "gray")
 ```
 
 ```{r}
-envelope(ppm_multi, fun = pcfinhom, nsim = 39)
-plot(env, main = "Envelope of residual g(r)")
+#envelope(ppm_multi, fun = pcfinhom, nsim = 19)
+#plot(env, main = "Envelope of residual g(r)")
 ```
-
-
 
 ```{r}
 #Calculate the partial residuals as a function of elevation
@@ -437,18 +513,15 @@ plot(par_res_fore,
      legend = FALSE,
      lwd = 2,
      main = "",
-     xlab = "Froest (%)")
+     xlab = "Forest (%)")
 plot(par_res_hfi,
      legend = FALSE,
      lwd = 2,
      main = "",
-     xlab = "HIF")
+     xlab = "HFI")
 plot(par_res_water,
      legend = FALSE,
      lwd = 2,
      main = "",
      xlab = "Water")
 ```
-
-
-
