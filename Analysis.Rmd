@@ -259,11 +259,16 @@ cor.im(elev,cover,hfi,dis,use ="pairwise.complete.obs")
 ```
 
 ```{r}
-parks_unmarked <- unmark(parks_ppp)
-model <- ppm(parks_unmarked  ~ elev + I(elev^2) + cover + I(cover^2)+hfi+I(hfi^2)+dis+I(dis^2),covariates = list(elev = elev, cover = cover,hfi=hfi,dis=dis))
+animal_unmarked <- unmark(animal_ppp)
+model <- ppm(animal_unmarked  ~ elev + I(elev^2) + cover + I(cover^2)+hfi+I(hfi^2)+dis+I(dis^2),covariates = list(elev = elev, cover = cover,hfi=hfi,dis=dis))
 model
+cat(AIC(model))
 plot(model,se=FALSE,superimpose=FALSE)
 plot(parks,pch=16,cex=0.6,color="white",add=TRUE)
+```
+
+```{r}
+quadrat.test(model)
 ```
 
 ```{r}
