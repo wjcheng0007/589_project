@@ -490,8 +490,8 @@ abline(h = 1, col = "gray")
 ```
 
 ```{r}
-#envelope(ppm_multi, fun = pcfinhom, nsim = 19)
-#plot(env, main = "Envelope of residual g(r)")
+env <-envelope(ppm_multi, fun = pcfinhom, nsim = 19)
+plot(env, main = "Envelope of residual g(r)")
 ```
 
 ```{r}
