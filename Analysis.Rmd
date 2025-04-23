@@ -105,14 +105,15 @@ elev_all <- elev_all[!is.na(elev_all)]
 elev_at_animals <- elev_at_animals[!is.na(elev_at_animals)]
 kde_all <- density(elev_all)
 kde_animals <- density(elev_at_animals)
-
+y_max <- max(c(kde_all$y, kde_animals$y))
 # Plot both KDE distributions
 plot(kde_all,
      main = "Elevation Distributions: BC vs. Animal Observations",
      xlab = "Elevation (meters)",
      ylab = "Density",
      col = "gray40", lwd = 2,
-     xlim = range(c(kde_all$x, kde_animals$x)))
+     xlim = range(c(kde_all$x, kde_animals$x)),
+     ylim = c(0, y_max))
 lines(kde_animals, col = "blue", lwd = 2)
 
 # Add legend
@@ -186,7 +187,7 @@ plot(Window(animal_ppp), add = TRUE, border = "darkgreen", lwd = 1)
 
 ```{r}
 # Estimate the relationship between animal intensity and elevation using rhohat
-Zcut <- cut(DATA$Elevation, breaks = quantile(DATA$Elevation, probs = 0:4 / 4, type = 2))
+Zcut <- cut(DATA$Elevation, breaks = quantile(DATA$Elevation, probs = 0:6 / 6, type = 2))
 animals <- unmark(animal_ppp)
 quadratcount(animals, tess = tess(image = Zcut))
 rho <- rhohat(animals, DATA$Elevation)
@@ -208,7 +209,7 @@ plot(en_K, main = "Ripley’s K-function with CSR Envelopes (Animal Observations
 
 ```
 
-![](images/clipboard-1227717430.png)
+The observed inhomogeneous K-function closely follows the expected K-function under complete spatial randomness (CSR), indicating no significant spatial clustering or inhibition beyond what is explained by the fitted intensity model.
 
 ```{r}
 # Compute intensity surface for animal observations
@@ -226,6 +227,8 @@ pcf_inhom <- envelope(animal_ppp, pcfinhom, nsim = 19,
 # Plot the inhomogeneous pair correlation function with simulation envelope
 plot(pcf_inhom, main = "Inhomogeneous Pair Correlation Function (Animal Observations)")
 ```
+
+observations show **significant small‑scale clustering**—many individuals occur within short distances of each other—while exhibiting no detectable interaction at larger scales.
 
 ```{r}
 animal <- unmark(animal_ppp)
@@ -264,15 +267,24 @@ model <- ppm(animal_unmarked  ~ elev + I(elev^2) + cover + I(cover^2)+hfi+I(hfi^
 model
 cat(AIC(model))
 plot(model,se=FALSE,superimpose=FALSE)
-plot(parks,pch=16,cex=0.6,color="white",add=TRUE)
+plot(animal,pch=16,cex=0.6,color="white",add=TRUE)
+
+model1_1 <- ppm(animal_unmarked  ~ hfi+I(hfi^2),covariates = DATA)
+cat(AIC(model1_1))
+model2_1 <- ppm(animal_unmarked  ~hfi+I(hfi^2)+ elev + I(elev^2) , covariates = DATA)
+cat(AIC(model2_1))
+model3_1 <- ppm(animal_unmarked  ~hfi+I(hfi^2)+ elev + I(elev^2) +cover + I(cover^2),covariates = DATA)
+cat(AIC(model3_1))
+
 ```
 
 ```{r}
 quadrat.test(model)
+
 ```
 
 ```{r}
-null_model <- ppm(parks_unmarked ~ 1)
+null_model <- ppm(animal_unmarked ~ 1)
 null_model
 AIC(model):AIC(null_model)
 AIC(null_model)-AIC(model)
@@ -282,7 +294,7 @@ AIC(null_model)-AIC(model)
 log_intensity <- log(predict(model, type = "trend", n = 500))  
 # Plot the log-intensity surface
 plot(log_intensity, main = "Log Fitted Intensity of Parks")
-plot(parks, pch = 16, cex = 0.6, col = "white", add = TRUE)
+plot(animal, pch = 16, cex = 0.6, col = "white", add = TRUE)
 # Median forest cover and elevation
 E_cover <- median(cover[], na.rm = TRUE)
 E_elev <- median(elev[], na.rm = TRUE)
